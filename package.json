@@ -77,5 +77,8 @@
   },
   "lint-staged": {
     "*.{js,css,md,ts,html}": "prettier --write"
+  },
+  "dependencies": {
+    "build": "^0.1.4"
   }
 }
