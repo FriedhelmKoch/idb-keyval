@@ -1,119 +1,9 @@
-/**********************************************************************
- * Crypt
- * 
- * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
- * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
- * 
- * Usage:
- * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
- * 		const ver = encrypt(text, key);
- * 		const ent = decrypt(ver, key);
- * 		console.log("Verschlüsselt: " + ver);
- * 		console.log("Entschlüsselt: " + ent);
- * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
- *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
- **********************************************************************/
-let Modulus: number = 65536;
-const salt: string = '${ThisIsTheSaltInMySoup}';
-
-function nextRandom(X: number, modulus: number): number {
-  /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
-  /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
-  /* welches unabhängig von gewählten Startwert ist(?).              */
-  const y: number = (17 * X + 1) % modulus;
-  return y;
-}
-
-function getBlockLength(m: number): number {
-  let i: number = 0;
-  while (m > 0) {
-    i++;
-    m = m >> 8;
-  }
-  return i - 1;
-}
-
-function getKey(key: string | number): number {
-  if (typeof key === 'string') {
-    key = key + key;
-    key = (key.charCodeAt(0) << 8) + key.charCodeAt(1);
-  } else {
-    key = Number(key);
-    if (isNaN(key))
-      key = 3333;
-    else if (key < 0)
-      key = key * -1;
-  }
-  key = key + 1;
-  while (key < Math.floor(Modulus / 3))
-    key = key * 3;
-  return (key % Modulus);
-}
-
-
-function crypt_HGC(EinText: string, key: string | number, encrypt: boolean): string {
-  let out: string = "";
-  let Sign: number, i: number, X: number = 255;
-  Modulus = 65536;
-
-  if (typeof key === 'string') {
-    for (i = 0; i < key.length; i++)
-      X = (X * key.charCodeAt(i)) % Modulus;
-  } else {
-    key = Number(key);
-    if (isNaN(key))
-      key = 3333;
-    else if (key < 0)
-      key = key * -1;
-  }
-
-  i = 0;
-  while (i < EinText.length) {
-    X = nextRandom(X, Modulus);
-    Sign = EinText.charCodeAt(i) ^ ((X >> 8) & 255);
-    if (typeof key === 'string') {
-      Sign = Sign ^ key.charCodeAt(i % key.length);
-    } else {
-      Sign = Sign ^ key;
-    }
-    if (encrypt) X = X ^ Sign;
-    else X = X ^ EinText.charCodeAt(i);
-    out = out + String.fromCharCode(Sign);
-    i++;
-  }
-  return out;
-}
-
-export function encrypt(text: string, key?: string | number): string {
-  key = typeof key === 'undefined' ? salt : key;
-  return encodeURI(crypt_HGC(text, key, true));
-}
-
-export function decrypt(chiffre: string, key?: string | number): string {
-  key = typeof key === 'undefined' ? salt : key;
-  return crypt_HGC(decodeURI(chiffre), key, false);
-}
-
-/**********************************************************************
-* 
-**********************************************************************/
-function promisifyRequest(request: IDBRequest, crypt: string, key: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    // @ts-ignore - file size hacks 
-    request.onsuccess = () => {
-      let cipher = '';
-      if (typeof request.result !== 'undefined' && key === 'activeUser') {
-        console.log(`DEBUG - promisify - klartext: ${JSON.stringify(request.result)}`);
-        if (crypt === 'encrypt') {
-          cipher = encrypt(JSON.stringify(request.result));
-        } else if (crypt === 'decrypt') {
-          cipher = JSON.stringify(decrypt(request.result));
-        }
-        console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher)}, klartext: ${JSON.stringify(decrypt(cipher))}`);
-      }
-      resolve(request.result);
-    };
+export function promisifyRequest<T = undefined>(
+  request: IDBRequest<T> | IDBTransaction,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    // @ts-ignore - file size hacks
+    request.oncomplete = request.onsuccess = () => resolve(request.result);
     // @ts-ignore - file size hacks
     request.onabort = request.onerror = () => reject(request.error);
   });
@@ -122,7 +12,7 @@ function promisifyRequest(request: IDBRequest, crypt: string, key: string): Prom
 export function createStore(dbName: string, storeName: string): UseStore {
   const request = indexedDB.open(dbName);
   request.onupgradeneeded = () => request.result.createObjectStore(storeName);
-  const dbp = promisifyRequest(request, "", "");
+  const dbp = promisifyRequest(request);
 
   return (txMode, callback) =>
     dbp.then((db) =>
@@ -154,7 +44,7 @@ export function get<T = any>(
   key: IDBValidKey,
   customStore = defaultGetStore(),
 ): Promise<T | undefined> {
-  return customStore('readonly', (store) => promisifyRequest(store.get(key), "encrypt", "activeUser"));
+  return customStore('readonly', (store) => promisifyRequest(store.get(key)));
 }
 
 /**
@@ -171,7 +61,7 @@ export function set(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "decrypt", "activeUser");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -188,7 +78,7 @@ export function setMany(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     entries.forEach((entry) => store.put(entry[1], entry[0]));
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -203,7 +93,7 @@ export function getMany<T = any>(
   customStore = defaultGetStore(),
 ): Promise<T[]> {
   return customStore('readonly', (store) =>
-    Promise.all(keys.map((key) => promisifyRequest(store.get(key), "", ""))),
+    Promise.all(keys.map((key) => promisifyRequest(store.get(key)))),
   );
 }
 
@@ -229,7 +119,7 @@ export function update<T = any>(
         store.get(key).onsuccess = function () {
           try {
             store.put(updater(this.result), key);
-            resolve(promisifyRequest(store.transaction, "", ""));
+            resolve(promisifyRequest(store.transaction));
           } catch (err) {
             reject(err);
           }
@@ -250,7 +140,7 @@ export function del(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.delete(key);
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -266,7 +156,7 @@ export function delMany(
 ): Promise<void> {
   return customStore('readwrite', (store: IDBObjectStore) => {
     keys.forEach((key: IDBValidKey) => store.delete(key));
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -278,7 +168,7 @@ export function delMany(
 export function clear(customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
     store.clear();
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -291,7 +181,7 @@ function eachCursor(
     callback(this.result);
     this.result.continue();
   };
-  return promisifyRequest(store.transaction, "", "");
+  return promisifyRequest(store.transaction);
 }
 
 /**
@@ -306,7 +196,7 @@ export function keys<KeyType extends IDBValidKey>(
     // Fast path for modern browsers
     if (store.getAllKeys) {
       return promisifyRequest(
-        store.getAllKeys() as unknown as IDBRequest<KeyType[]>, "", ""
+        store.getAllKeys() as unknown as IDBRequest<KeyType[]>,
       );
     }
 
@@ -327,7 +217,7 @@ export function values<T = any>(customStore = defaultGetStore()): Promise<T[]> {
   return customStore('readonly', (store) => {
     // Fast path for modern browsers
     if (store.getAll) {
-      return promisifyRequest(store.getAll() as IDBRequest<T[]>, "", "");
+      return promisifyRequest(store.getAll() as IDBRequest<T[]>);
     }
 
     const items: T[] = [];
@@ -352,9 +242,9 @@ export function entries<KeyType extends IDBValidKey, ValueType = any>(
     if (store.getAll && store.getAllKeys) {
       return Promise.all([
         promisifyRequest(
-          store.getAllKeys() as unknown as IDBRequest<KeyType[]>, "", ""
+          store.getAllKeys() as unknown as IDBRequest<KeyType[]>,
         ),
-        promisifyRequest(store.getAll() as IDBRequest<ValueType[]>, "", ""),
+        promisifyRequest(store.getAll() as IDBRequest<ValueType[]>),
       ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
     }
 
