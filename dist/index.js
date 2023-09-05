@@ -82,8 +82,8 @@ function promisifyRequest(request, crypt, key) {
                 else if (crypt === 'decrypt') {
                     cipher = JSON.stringify(decrypt(res));
                 }
-                resolve(res);
                 console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
+                resolve(res);
             }
         };
         // @ts-ignore - file size hacks
