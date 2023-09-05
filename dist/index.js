@@ -15,13 +15,37 @@
  *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
  **********************************************************************/
 let Modulus = 65536;
-const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
+const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 function nextRandom(X, modulus) {
     /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
     /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
     /* welches unabhängig von gewählten Startwert ist(?).              */
     const y = (17 * X + 1) % modulus;
     return y;
+}
+function getBlockLength(m) {
+	let i = 0;
+	while(m > 0) {
+		i++;
+		m = m>>8;
+	}
+	return i-1;
+}
+function getKey(key) {
+	if (isNaN(key)) {
+		key = key + key;
+		key = (key.charCodeAt(0)<<8) + key.charCodeAt(1);
+	} else {
+		key = parseInt(key);
+		if (isNaN(key))
+			key = 3333;
+		else if (key < 0)
+			key = key * -1;
+	}
+	key = key + 1;
+	while (key < Math.floor(Modulus/3))
+		key = key * 3;
+	return (key%Modulus);
 }
 function crypt_HGC(EinText, key, encrypt) {
     let out = "";
@@ -69,22 +93,22 @@ function decrypt(chiffre, key) {
 *
 **********************************************************************/
 function promisifyRequest(request, crypt, key) {
+    console.log(`DEBUG - promisify - crypt: ${crypt}, key: ${key}`);
     let cipher = "";
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
-            const res = request.result;
-            if (typeof res != 'undefined' && key === 'activeUser') {
-                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
+            if (typeof request.result != 'undefined' && key == 'activeUser') {
+                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(request.result).substring(0, 150)}`);
                 if (crypt === 'encrypt') {
-                    cipher = encrypt(JSON.stringify(res));
+                    cipher = encrypt(JSON.stringify(request.result));
                 }
                 else if (crypt === 'decrypt') {
-                    cipher = JSON.stringify(decrypt(res));
+                    cipher = JSON.stringify(decrypt(request.result));
                 }
-                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
-                resolve(res);
+                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 150)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 150))}`);
             }
+            resolve(request.result);
         };
         // @ts-ignore - file size hacks
         request.onabort = request.onerror = () => reject(request.error);

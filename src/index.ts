@@ -6,7 +6,7 @@
  * 
  * Usage:
  * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
+ * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
  * 		const ver = encrypt(text, key);
  * 		const ent = decrypt(ver, key);
  * 		console.log("Verschlüsselt: " + ver);
@@ -15,7 +15,7 @@
  *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
  **********************************************************************/
 let Modulus: number = 65536;
-const salt: string = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
+const salt: string = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 
 function nextRandom(X: number, modulus: number): number {
   /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
@@ -78,13 +78,14 @@ export function promisifyRequest<T = undefined>(
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
-      if (typeof res != 'undefined' && key === 'activeUser') {
+      if (typeof res != 'undefined' && key == 'activeUser') {
         console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
         if (crypt === 'encrypt') {
           cipher = encrypt(JSON.stringify(res));
         } else if (crypt === 'decrypt') {
           cipher = JSON.stringify(decrypt(res));
         }
+        console.log(`DEBUG - promisify - key: ${key}`);
         console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
         resolve(res);
       }
