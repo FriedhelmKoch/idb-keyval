@@ -102,7 +102,7 @@ function promisifyRequest(request, crypt, key) {
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
 
-      if (typeof res !== 'undefined' && key === 'activeUser') {
+      if (typeof res != 'undefined' && key === 'activeUser') {
         console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
 
         if (crypt === 'encrypt') {

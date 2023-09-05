@@ -78,7 +78,7 @@ export function promisifyRequest<T = undefined>(
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
-      if (typeof res !== 'undefined' && key === 'activeUser') {
+      if (typeof res != 'undefined' && key === 'activeUser') {
         console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
         if (crypt === 'encrypt') {
           cipher = encrypt(JSON.stringify(res));
