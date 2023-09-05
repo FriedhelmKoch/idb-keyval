@@ -15,7 +15,7 @@
  *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
  **********************************************************************/
 let Modulus = 65536;
-const salt = '${ThisIsTheSaltInMySoup}';
+const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 function nextRandom(X, modulus) {
     /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
     /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
@@ -69,12 +69,11 @@ function decrypt(chiffre, key) {
 *
 **********************************************************************/
 function promisifyRequest(request, crypt, key) {
+    let cipher = "";
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
             const res = request.result;
-            let cipher = "";
-            resolve(res);
             if (typeof res !== 'undefined' && key === 'activeUser') {
                 console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
                 if (crypt === 'encrypt') {
@@ -83,7 +82,8 @@ function promisifyRequest(request, crypt, key) {
                 else if (crypt === 'decrypt') {
                     cipher = JSON.stringify(decrypt(res));
                 }
-                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher)}, klartext: ${JSON.stringify(decrypt(cipher))}`);
+                resolve(res);
+                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
             }
         };
         // @ts-ignore - file size hacks

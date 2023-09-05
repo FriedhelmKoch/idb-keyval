@@ -33,7 +33,7 @@ Object.defineProperty(exports, '__esModule', {
  **********************************************************************/
 
 var Modulus = 65536;
-var salt = '${ThisIsTheSaltInMySoup}';
+var salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 
 function nextRandom(X, modulus) {
   /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
@@ -96,12 +96,11 @@ function decrypt(chiffre, key) {
 
 
 function promisifyRequest(request, crypt, key) {
+  var cipher = "";
   return new Promise(function (resolve, reject) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
-      var cipher = "";
-      resolve(res);
 
       if (typeof res !== 'undefined' && key === 'activeUser') {
         console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
@@ -112,7 +111,8 @@ function promisifyRequest(request, crypt, key) {
           cipher = JSON.stringify(decrypt(res));
         }
 
-        console.log("DEBUG - promisify - cipher: ".concat(JSON.stringify(cipher), ", klartext: ").concat(JSON.stringify(decrypt(cipher))));
+        resolve(res);
+        console.log("DEBUG - promisify - cipher: ".concat(JSON.stringify(cipher).substring(0, 100), ", klartext: ").concat(JSON.stringify(decrypt(cipher).substring(0, 100))));
       }
     }; // @ts-ignore - file size hacks
 

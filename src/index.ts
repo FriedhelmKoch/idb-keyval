@@ -15,7 +15,7 @@
  *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
  **********************************************************************/
 let Modulus: number = 65536;
-const salt: string = '${ThisIsTheSaltInMySoup}';
+const salt: string = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 
 function nextRandom(X: number, modulus: number): number {
   /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
@@ -71,15 +71,13 @@ export function decrypt(chiffre: string, key?: string | number): string {
 /**********************************************************************
 * 
 **********************************************************************/
-
 export function promisifyRequest<T = undefined>(
   request: IDBRequest<T> | IDBTransaction, crypt: string, key: string
 ): Promise<T> {
+  let cipher: string = "";
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
-      let cipher: string = "";
-      resolve(res);
       if (typeof res !== 'undefined' && key === 'activeUser') {
         console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
         if (crypt === 'encrypt') {
@@ -87,7 +85,8 @@ export function promisifyRequest<T = undefined>(
         } else if (crypt === 'decrypt') {
           cipher = JSON.stringify(decrypt(res));
         }
-        console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher)}, klartext: ${JSON.stringify(decrypt(cipher))}`);
+        resolve(res);
+        console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
       }
     }
     // @ts-ignore - file size hacks
