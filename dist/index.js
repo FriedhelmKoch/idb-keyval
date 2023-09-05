@@ -110,7 +110,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key), "", ""));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", "activeUser"));
 }
 /**
  * Set a value with a key.
@@ -122,7 +122,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction, "", "");
+        return promisifyRequest(store.transaction, "encrypt", "activeUser");
     });
 }
 /**

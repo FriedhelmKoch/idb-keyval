@@ -158,7 +158,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key), "", "");
+    return promisifyRequest(store.get(key), "decrypt", "activeUser");
   });
 }
 /**
@@ -174,7 +174,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction, "encrypt", "activeUser");
   });
 }
 /**

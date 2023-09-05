@@ -78,7 +78,7 @@ export function promisifyRequest<T = undefined>(
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
-      let cipher = "";
+      let cipher: string = "";
       resolve(res);
       if (typeof res !== 'undefined' && key === 'activeUser') {
         console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
@@ -130,7 +130,7 @@ export function get<T = any>(
   key: IDBValidKey,
   customStore = defaultGetStore(),
 ): Promise<T | undefined> {
-  return customStore('readonly', (store) => promisifyRequest(store.get(key),  "", ""));
+  return customStore('readonly', (store) => promisifyRequest(store.get(key),  "decrypt", "activeUser"));
 }
 
 /**
@@ -147,7 +147,7 @@ export function set(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.put(value, key);
-    return promisifyRequest(store.transaction,  "", "");
+    return promisifyRequest(store.transaction,  "encrypt", "activeUser");
   });
 }
 
