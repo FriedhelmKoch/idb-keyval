@@ -77,7 +77,19 @@ export function promisifyRequest<T = undefined>(
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
-    request.oncomplete = request.onsuccess = () => resolve(request.result);
+    request.oncomplete = request.onsuccess = () => { const res = request.result;
+      let cipher = "";
+      resolve(res);
+      if (typeof res !== 'undefined' && key === 'activeUser') {
+        console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
+        if (crypt === 'encrypt') {
+          cipher = encrypt(JSON.stringify(res));
+        } else if (crypt === 'decrypt') {
+          cipher = JSON.stringify(decrypt(res));
+        }
+        console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher)}, klartext: ${JSON.stringify(decrypt(cipher))}`);
+      }
+    }
     // @ts-ignore - file size hacks
     request.onabort = request.onerror = () => reject(request.error);
   });
