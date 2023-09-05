@@ -15,8 +15,87 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
+/**********************************************************************
+ * Crypt
+ *
+ * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
+ * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
+ *
+ * Usage:
+ * 		const text = "Das ist ein zu verschlüsselnder Text";
+ * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
+ * 		const ver = encrypt(text, key);
+ * 		const ent = decrypt(ver, key);
+ * 		console.log("Verschlüsselt: " + ver);
+ * 		console.log("Entschlüsselt: " + ent);
+ * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
+ *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
+ **********************************************************************/
 
-function promisifyRequest(request) {
+var Modulus = 65536;
+var salt = '${ThisIsTheSaltInMySoup}';
+
+function nextRandom(X, modulus) {
+  /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
+
+  /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
+
+  /* welches unabhängig von gewählten Startwert ist(?).              */
+  var y = (17 * X + 1) % modulus;
+  return y;
+}
+
+function crypt_HGC(EinText, key, encrypt) {
+  var out = "";
+  var Sign,
+      i,
+      X = 255;
+  Modulus = 65536;
+
+  if (typeof key === 'string') {
+    for (i = 0; i < key.length; i++) {
+      X = X * key.charCodeAt(i) % Modulus;
+    }
+  } else {
+    key = Number(key);
+    if (isNaN(key)) key = 3333;else if (key < 0) key = key * -1;
+  }
+
+  i = 0;
+
+  while (i < EinText.length) {
+    X = nextRandom(X, Modulus);
+    Sign = EinText.charCodeAt(i) ^ X >> 8 & 255;
+
+    if (typeof key === 'string') {
+      Sign = Sign ^ key.charCodeAt(i % key.length);
+    } else {
+      Sign = Sign ^ key;
+    }
+
+    if (encrypt) X = X ^ Sign;else X = X ^ EinText.charCodeAt(i);
+    out = out + String.fromCharCode(Sign);
+    i++;
+  }
+
+  return out;
+}
+
+function encrypt(text, key) {
+  key = typeof key === 'undefined' ? salt : key;
+  return encodeURI(crypt_HGC(text, key, true));
+}
+
+function decrypt(chiffre, key) {
+  key = typeof key === 'undefined' ? salt : key;
+  return crypt_HGC(decodeURI(chiffre), key, false);
+}
+/**********************************************************************
+*
+**********************************************************************/
+
+
+function promisifyRequest(request, crypt, key) {
   return new Promise(function (resolve, reject) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
@@ -137,7 +216,7 @@ function update(key, updater) {
         store.get(key).onsuccess = function () {
           try {
             store.put(updater(this.result), key);
-            resolve(promisifyRequest(store.transaction));
+            resolve(promisifyRequest(store.transaction, "", ""));
           } catch (err) {
             reject(err);
           }
@@ -285,8 +364,10 @@ function entries() {
 
 exports.clear = clear;
 exports.createStore = createStore;
+exports.decrypt = decrypt;
 exports.del = del;
 exports.delMany = delMany;
+exports.encrypt = encrypt;
 exports.entries = entries;
 exports.get = get;
 exports.getMany = getMany;
