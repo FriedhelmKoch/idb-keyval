@@ -10,6 +10,10 @@ It's small and tree-shakeable. If you only use get/set, the library is ~250 byte
 
 This is only a keyval store. If you need to do more complex things like iteration & indexing, check out [IDB on NPM](https://www.npmjs.com/package/idb) (a little heavier at 1k). The first example in its README is how to create a keyval store.
 
+```
+I have extended the module with an encryption for an indexedDB key.
+```
+
 ## Installing
 
 ### Recommended: Via npm + webpack/rollup/parcel/etc
