@@ -93,7 +93,21 @@ function promisifyRequest(request, crypt, key) {
   return new Promise(function (resolve, reject) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
-      return resolve(request.result);
+      var res = request.result;
+      var cipher = "";
+      resolve(res);
+
+      if (typeof res !== 'undefined' && key === 'activeUser') {
+        console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
+
+        if (crypt === 'encrypt') {
+          cipher = encrypt(JSON.stringify(res));
+        } else if (crypt === 'decrypt') {
+          cipher = JSON.stringify(decrypt(res));
+        }
+
+        console.log("DEBUG - promisify - cipher: ".concat(JSON.stringify(cipher), ", klartext: ").concat(JSON.stringify(decrypt(cipher))));
+      }
     }; // @ts-ignore - file size hacks
 
 
@@ -110,7 +124,7 @@ function createStore(dbName, storeName) {
     return request.result.createObjectStore(storeName);
   };
 
-  var dbp = promisifyRequest(request);
+  var dbp = promisifyRequest(request, "", "");
   return function (txMode, callback) {
     return dbp.then(function (db) {
       return callback(db.transaction(storeName, txMode).objectStore(storeName));
@@ -138,7 +152,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key));
+    return promisifyRequest(store.get(key), "", "");
   });
 }
 /**
@@ -154,7 +168,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 /**
@@ -172,7 +186,7 @@ function setMany(entries) {
     entries.forEach(function (entry) {
       return store.put(entry[1], entry[0]);
     });
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 /**
@@ -187,7 +201,7 @@ function getMany(keys) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
     return Promise.all(keys.map(function (key) {
-      return promisifyRequest(store.get(key));
+      return promisifyRequest(store.get(key), "", "");
     }));
   });
 }
@@ -231,7 +245,7 @@ function del(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.delete(key);
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 /**
@@ -248,7 +262,7 @@ function delMany(keys) {
     keys.forEach(function (key) {
       return store.delete(key);
     });
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 /**
@@ -262,7 +276,7 @@ function clear() {
   var customStore = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.clear();
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -273,7 +287,7 @@ function eachCursor(store, callback) {
     this.result.continue();
   };
 
-  return promisifyRequest(store.transaction);
+  return promisifyRequest(store.transaction, "", "");
 }
 /**
  * Get all keys in the store.
@@ -287,7 +301,7 @@ function keys() {
   return customStore('readonly', function (store) {
     // Fast path for modern browsers
     if (store.getAllKeys) {
-      return promisifyRequest(store.getAllKeys());
+      return promisifyRequest(store.getAllKeys(), "", "");
     }
 
     var items = [];
@@ -310,7 +324,7 @@ function values() {
   return customStore('readonly', function (store) {
     // Fast path for modern browsers
     if (store.getAll) {
-      return promisifyRequest(store.getAll());
+      return promisifyRequest(store.getAll(), "", "");
     }
 
     var items = [];
@@ -334,7 +348,7 @@ function entries() {
     // Fast path for modern browsers
     // (although, hopefully we'll get a simpler path some day)
     if (store.getAll && store.getAllKeys) {
-      return Promise.all([promisifyRequest(store.getAllKeys()), promisifyRequest(store.getAll())]).then(function (_ref) {
+      return Promise.all([promisifyRequest(store.getAllKeys(), "", ""), promisifyRequest(store.getAll(), "", "")]).then(function (_ref) {
         var _ref2 = _slicedToArray(_ref, 2),
             keys = _ref2[0],
             values = _ref2[1];

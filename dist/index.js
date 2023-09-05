@@ -71,7 +71,21 @@ function decrypt(chiffre, key) {
 function promisifyRequest(request, crypt, key) {
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
-        request.oncomplete = request.onsuccess = () => resolve(request.result);
+        request.oncomplete = request.onsuccess = () => {
+            const res = request.result;
+            let cipher = "";
+            resolve(res);
+            if (typeof res !== 'undefined' && key === 'activeUser') {
+                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
+                if (crypt === 'encrypt') {
+                    cipher = encrypt(JSON.stringify(res));
+                }
+                else if (crypt === 'decrypt') {
+                    cipher = JSON.stringify(decrypt(res));
+                }
+                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher)}, klartext: ${JSON.stringify(decrypt(cipher))}`);
+            }
+        };
         // @ts-ignore - file size hacks
         request.onabort = request.onerror = () => reject(request.error);
     });
@@ -79,7 +93,7 @@ function promisifyRequest(request, crypt, key) {
 function createStore(dbName, storeName) {
     const request = indexedDB.open(dbName);
     request.onupgradeneeded = () => request.result.createObjectStore(storeName);
-    const dbp = promisifyRequest(request);
+    const dbp = promisifyRequest(request, "", "");
     return (txMode, callback) => dbp.then((db) => callback(db.transaction(storeName, txMode).objectStore(storeName)));
 }
 let defaultGetStoreFunc;
@@ -96,7 +110,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key)));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key), "", ""));
 }
 /**
  * Set a value with a key.
@@ -108,7 +122,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction);
+        return promisifyRequest(store.transaction, "", "");
     });
 }
 /**
@@ -121,7 +135,7 @@ function set(key, value, customStore = defaultGetStore()) {
 function setMany(entries, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         entries.forEach((entry) => store.put(entry[1], entry[0]));
-        return promisifyRequest(store.transaction);
+        return promisifyRequest(store.transaction, "", "");
     });
 }
 /**
@@ -131,7 +145,7 @@ function setMany(entries, customStore = defaultGetStore()) {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function getMany(keys, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => Promise.all(keys.map((key) => promisifyRequest(store.get(key)))));
+    return customStore('readonly', (store) => Promise.all(keys.map((key) => promisifyRequest(store.get(key), "", ""))));
 }
 /**
  * Update a value. This lets you see the old value and update it as an atomic operation.
@@ -166,7 +180,7 @@ function update(key, updater, customStore = defaultGetStore()) {
 function del(key, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.delete(key);
-        return promisifyRequest(store.transaction);
+        return promisifyRequest(store.transaction, "", "");
     });
 }
 /**
@@ -178,7 +192,7 @@ function del(key, customStore = defaultGetStore()) {
 function delMany(keys, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         keys.forEach((key) => store.delete(key));
-        return promisifyRequest(store.transaction);
+        return promisifyRequest(store.transaction, "", "");
     });
 }
 /**
@@ -189,7 +203,7 @@ function delMany(keys, customStore = defaultGetStore()) {
 function clear(customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.clear();
-        return promisifyRequest(store.transaction);
+        return promisifyRequest(store.transaction, "", "");
     });
 }
 function eachCursor(store, callback) {
@@ -199,7 +213,7 @@ function eachCursor(store, callback) {
         callback(this.result);
         this.result.continue();
     };
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
 }
 /**
  * Get all keys in the store.
@@ -210,7 +224,7 @@ function keys(customStore = defaultGetStore()) {
     return customStore('readonly', (store) => {
         // Fast path for modern browsers
         if (store.getAllKeys) {
-            return promisifyRequest(store.getAllKeys());
+            return promisifyRequest(store.getAllKeys(), "", "");
         }
         const items = [];
         return eachCursor(store, (cursor) => items.push(cursor.key)).then(() => items);
@@ -225,7 +239,7 @@ function values(customStore = defaultGetStore()) {
     return customStore('readonly', (store) => {
         // Fast path for modern browsers
         if (store.getAll) {
-            return promisifyRequest(store.getAll());
+            return promisifyRequest(store.getAll(), "", "");
         }
         const items = [];
         return eachCursor(store, (cursor) => items.push(cursor.value)).then(() => items);
@@ -242,8 +256,8 @@ function entries(customStore = defaultGetStore()) {
         // (although, hopefully we'll get a simpler path some day)
         if (store.getAll && store.getAllKeys) {
             return Promise.all([
-                promisifyRequest(store.getAllKeys()),
-                promisifyRequest(store.getAll())
+                promisifyRequest(store.getAllKeys(), "", ""),
+                promisifyRequest(store.getAll(), "", "")
             ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
         }
         const items = [];
