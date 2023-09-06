@@ -15,7 +15,7 @@ function promisifyRequest(request, crypt, key) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
       var res = request === null || request === void 0 ? void 0 : request.result;
-      console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
+      console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res)));
       resolve(res);
     }; // @ts-ignore - file size hacks
 

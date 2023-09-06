@@ -3,7 +3,7 @@ function promisifyRequest(request, crypt, key) {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
             const res = request?.result;
-            console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
+            console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res)}`);
             resolve(res);
         };
         // @ts-ignore - file size hacks
