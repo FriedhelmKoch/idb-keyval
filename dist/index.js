@@ -108,7 +108,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-        if (JSON.stringify(key) === 'activeUser') {
+        if (key == 'activeUser') {
             console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
             store.put(encrypt(JSON.stringify(value)), key);
         }
