@@ -84,12 +84,9 @@ function promisifyRequest(request, crypt, key) {
       if (typeof res != 'undefined' && key === 'activeUser') {
         console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
 
-        if (crypt === 'en') {
-          cipher = encrypt(JSON.stringify(res));
-          console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
-        } else if (crypt === 'de') {
+        if (crypt === 'de') {
           var str = decrypt(res).replaceAll("\\", "");
-          console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(str).substring(0, 100)));
+          console.log("DEBUG - promisify (".concat(crypt, ") cipher-str: ").concat(JSON.stringify(str).substring(0, 100)));
           cipher = JSON.parse(str);
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
         }
@@ -161,8 +158,13 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     console.log("DEBUG - SET: ".concat(JSON.stringify(key), " ==> ").concat(JSON.stringify(value).substring(0, 100)));
+
+    if (key === 'activeUser') {
+      store.put(encrypt(JSON.stringify(value)), key);
+    }
+
     store.put(value, key);
-    return promisifyRequest(store.transaction, "en", key);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 /**

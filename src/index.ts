@@ -68,12 +68,9 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
       if (typeof res != 'undefined' && key === 'activeUser') {
         console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
 
-        if (crypt === 'en') {
-          cipher = encrypt(JSON.stringify(res));
-          console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
-        } else if (crypt === 'de') {
+        if (crypt === 'de') {
           const str: string = decrypt(res).replaceAll("\\", "");
-          console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(str).substring(0, 100)}`);
+          console.log(`DEBUG - promisify (${crypt}) cipher-str: ${JSON.stringify(str).substring(0, 100)}`);
 
           cipher = JSON.parse(str);
           console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
@@ -132,8 +129,11 @@ function get(key: IDBValidKey, customStore = defaultGetStore()): Promise<any> {
 function set(key: IDBValidKey, value: any, customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
     console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
+    if (key === 'activeUser') {
+      store.put(encrypt(JSON.stringify(value)), key);
+    }
     store.put(value, key);
-    return promisifyRequest(store.transaction, "en", key);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
