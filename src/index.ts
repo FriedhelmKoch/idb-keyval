@@ -72,7 +72,7 @@ export function decrypt(chiffre: string, key?: string | number): string {
 * 
 **********************************************************************/
 export function promisifyRequest<T = undefined>(
-  request: IDBRequest<T> | IDBTransaction, crypt: string, key: any
+  request: IDBRequest<T> | IDBTransaction, crypt: string, key: IDBValidKey
 ): Promise<T> {
   let cipher: string = "";
   return new Promise<T>((resolve, reject) => {
@@ -88,8 +88,10 @@ export function promisifyRequest<T = undefined>(
         } else if (crypt === 'decrypt') {
           cipher = JSON.stringify(decrypt(res));
         }
+
         console.log(`DEBUG - promisify - key: ${key}`);
         console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
+        
         resolve(res);
       }
     }
