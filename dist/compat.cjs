@@ -81,7 +81,7 @@ function promisifyRequest(request, crypt, key) {
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
 
-      if (typeof res != 'undefined' && (key === 'activeUser' || key === 'activityOwners' || key === 'ownersActivities')) {
+      if (typeof res != 'undefined' && (key === 'activeUser' || key === 'activityOwners')) {
         //console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
         if (crypt === 'de') {
           var str = decrypt(res).replaceAll("\\", ""); //console.log(`DEBUG - promisify (${crypt}) cipher-str: ${JSON.stringify(str).substring(0, 100)}`);
@@ -156,7 +156,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     //console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-    if (key === 'activeUser' || key === 'activityOwners' || key === 'ownersActivities') {
+    if (key === 'activeUser' || key === 'activityOwners') {
       //console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
       store.put(encrypt(JSON.stringify(value)), key);
     } else {
