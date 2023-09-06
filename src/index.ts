@@ -129,11 +129,12 @@ function get(key: IDBValidKey, customStore = defaultGetStore()): Promise<any> {
 function set(key: IDBValidKey, value: any, customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
     console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-    if (JSON.stringify(key) == 'activeUser') {
+    if (JSON.stringify(key) === 'activeUser') {
       console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
       store.put(encrypt(JSON.stringify(value)), key);
+    } else {
+      store.put(value, key);
     }
-    store.put(value, key);
     return promisifyRequest(store.transaction, "", "");
   });
 }

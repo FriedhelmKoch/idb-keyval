@@ -159,12 +159,13 @@ function set(key, value) {
   return customStore('readwrite', function (store) {
     console.log("DEBUG - SET: ".concat(JSON.stringify(key), " ==> ").concat(JSON.stringify(value).substring(0, 100)));
 
-    if (JSON.stringify(key) == 'activeUser') {
+    if (JSON.stringify(key) === 'activeUser') {
       console.log("DEBUG - stored ".concat(JSON.stringify(key), " encrypted..."));
       store.put(encrypt(JSON.stringify(value)), key);
+    } else {
+      store.put(value, key);
     }
 
-    store.put(value, key);
     return promisifyRequest(store.transaction, "", "");
   });
 }
