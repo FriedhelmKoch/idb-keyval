@@ -21,7 +21,7 @@ function promisifyRequest(request, crypt, key) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
-      console.log("DEBUG - promisify (".concat(key, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
+      console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
       resolve(res);
     }; // @ts-ignore - file size hacks
 
@@ -67,7 +67,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key), "", "");
+    return promisifyRequest(store.get(key), "decrypt", key);
   });
 }
 /**
@@ -83,7 +83,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction, "encrypt", key);
   });
 }
 /**

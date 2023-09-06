@@ -5,11 +5,11 @@ export function promisifyRequest<T = undefined>(
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
 
-      console.log(`DEBUG - promisify (${key}) res: ${JSON.stringify(res).substring(0, 100)}`);
+      console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
 
       resolve(res);
     }
-    
+
     // @ts-ignore - file size hacks
     request.onabort = request.onerror = () => reject(request.error);
   });
@@ -50,7 +50,7 @@ export function get<T = any>(
   key: IDBValidKey,
   customStore = defaultGetStore(),
 ): Promise<T | undefined> {
-  return customStore('readonly', (store) => promisifyRequest(store.get(key), "", ""));
+  return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
 }
 
 /**
@@ -67,7 +67,7 @@ export function set(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction, "encrypt", key);
   });
 }
 
