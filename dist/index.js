@@ -55,7 +55,7 @@ function promisifyRequest(request, crypt, key) {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
             const res = request.result;
-            if (typeof res != 'undefined' && (key === 'activeUser' || key === 'activityOwners')) {
+            if (typeof res != 'undefined' && (key === 'activeUser' || key === 'activityOwners' || key === 'ownersActivities')) {
                 //console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
                 if (crypt === 'de') {
                     const str = decrypt(res).replaceAll("\\", "");
@@ -108,7 +108,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         //console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-        if (key === 'activeUser' || key === 'activityOwners') {
+        if (key === 'activeUser' || key === 'activityOwners' || key === 'ownersActivities') {
             //console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
             store.put(encrypt(JSON.stringify(value)), key);
         }
