@@ -15,107 +15,12 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
-/**********************************************************************
- * Crypt
- *
- * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
- * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
- *
- * Usage:
- * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
- * 		const ver = encrypt(text, key);
- * 		const ent = decrypt(ver, key);
- * 		console.log("Verschlüsselt: " + ver);
- * 		console.log("Entschlüsselt: " + ent);
- * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
- *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
- **********************************************************************/
 
-var Modulus = 65536;
-var salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
-
-function nextRandom(X, modulus) {
-  /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
-
-  /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
-
-  /* welches unabhängig von gewählten Startwert ist(?).              */
-  var y = (17 * X + 1) % modulus;
-  return y;
-}
-
-function crypt_HGC(EinText, key, encrypt) {
-  var out = "";
-  var Sign,
-      i,
-      X = 255;
-  Modulus = 65536;
-
-  if (typeof key === 'string') {
-    for (i = 0; i < key.length; i++) {
-      X = X * key.charCodeAt(i) % Modulus;
-    }
-  } else {
-    key = Number(key);
-    if (isNaN(key)) key = 3333;else if (key < 0) key = key * -1;
-  }
-
-  i = 0;
-
-  while (i < EinText.length) {
-    X = nextRandom(X, Modulus);
-    Sign = EinText.charCodeAt(i) ^ X >> 8 & 255;
-
-    if (typeof key === 'string') {
-      Sign = Sign ^ key.charCodeAt(i % key.length);
-    } else {
-      Sign = Sign ^ key;
-    }
-
-    if (encrypt) X = X ^ Sign;else X = X ^ EinText.charCodeAt(i);
-    out = out + String.fromCharCode(Sign);
-    i++;
-  }
-
-  return out;
-}
-
-function encrypt(text, key) {
-  key = typeof key === 'undefined' ? salt : key;
-  return encodeURI(crypt_HGC(text, key, true));
-}
-
-function decrypt(chiffre, key) {
-  key = typeof key === 'undefined' ? salt : key;
-  return crypt_HGC(decodeURI(chiffre), key, false);
-}
-/**********************************************************************
-*
-**********************************************************************/
-
-
-function promisifyRequest(request, crypt, key) {
-  var cipher = "";
+function promisifyRequest(request) {
   return new Promise(function (resolve, reject) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
-      var res = request.result;
-      console.log("DEBUG - promisify (".concat(key, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
-
-      if (typeof res != 'undefined' && key == 'activeUser') {
-        console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
-
-        if (crypt === 'encrypt') {
-          cipher = encrypt(JSON.stringify(res));
-        } else if (crypt === 'decrypt') {
-          cipher = JSON.stringify(decrypt(res));
-        }
-
-        console.log("DEBUG - promisify - key: ".concat(key));
-        console.log("DEBUG - promisify - cipher: ".concat(JSON.stringify(cipher).substring(0, 100), ", klartext: ").concat(JSON.stringify(decrypt(cipher).substring(0, 100))));
-        resolve(res);
-      }
+      return resolve(request.result);
     }; // @ts-ignore - file size hacks
 
 
@@ -132,7 +37,7 @@ function createStore(dbName, storeName) {
     return request.result.createObjectStore(storeName);
   };
 
-  var dbp = promisifyRequest(request, "", "");
+  var dbp = promisifyRequest(request);
   return function (txMode, callback) {
     return dbp.then(function (db) {
       return callback(db.transaction(storeName, txMode).objectStore(storeName));
@@ -160,7 +65,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key), "decrypt", key);
+    return promisifyRequest(store.get(key));
   });
 }
 /**
@@ -176,7 +81,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "encrypt", key);
+    return promisifyRequest(store.transaction);
   });
 }
 /**
@@ -194,7 +99,7 @@ function setMany(entries) {
     entries.forEach(function (entry) {
       return store.put(entry[1], entry[0]);
     });
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 /**
@@ -209,7 +114,7 @@ function getMany(keys) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
     return Promise.all(keys.map(function (key) {
-      return promisifyRequest(store.get(key), "", "");
+      return promisifyRequest(store.get(key));
     }));
   });
 }
@@ -232,7 +137,7 @@ function update(key, updater) {
         store.get(key).onsuccess = function () {
           try {
             store.put(updater(this.result), key);
-            resolve(promisifyRequest(store.transaction, "", ""));
+            resolve(promisifyRequest(store.transaction));
           } catch (err) {
             reject(err);
           }
@@ -253,7 +158,7 @@ function del(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.delete(key);
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 /**
@@ -270,7 +175,7 @@ function delMany(keys) {
     keys.forEach(function (key) {
       return store.delete(key);
     });
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 /**
@@ -284,7 +189,7 @@ function clear() {
   var customStore = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.clear();
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
   });
 }
 
@@ -295,7 +200,7 @@ function eachCursor(store, callback) {
     this.result.continue();
   };
 
-  return promisifyRequest(store.transaction, "", "");
+  return promisifyRequest(store.transaction);
 }
 /**
  * Get all keys in the store.
@@ -309,7 +214,7 @@ function keys() {
   return customStore('readonly', function (store) {
     // Fast path for modern browsers
     if (store.getAllKeys) {
-      return promisifyRequest(store.getAllKeys(), "", "");
+      return promisifyRequest(store.getAllKeys());
     }
 
     var items = [];
@@ -332,7 +237,7 @@ function values() {
   return customStore('readonly', function (store) {
     // Fast path for modern browsers
     if (store.getAll) {
-      return promisifyRequest(store.getAll(), "", "");
+      return promisifyRequest(store.getAll());
     }
 
     var items = [];
@@ -356,7 +261,7 @@ function entries() {
     // Fast path for modern browsers
     // (although, hopefully we'll get a simpler path some day)
     if (store.getAll && store.getAllKeys) {
-      return Promise.all([promisifyRequest(store.getAllKeys(), "", ""), promisifyRequest(store.getAll(), "", "")]).then(function (_ref) {
+      return Promise.all([promisifyRequest(store.getAllKeys()), promisifyRequest(store.getAll())]).then(function (_ref) {
         var _ref2 = _slicedToArray(_ref, 2),
             keys = _ref2[0],
             values = _ref2[1];
@@ -380,10 +285,8 @@ function entries() {
 
 exports.clear = clear;
 exports.createStore = createStore;
-exports.decrypt = decrypt;
 exports.del = del;
 exports.delMany = delMany;
-exports.encrypt = encrypt;
 exports.entries = entries;
 exports.get = get;
 exports.getMany = getMany;

@@ -2,96 +2,10 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-/**********************************************************************
- * Crypt
- *
- * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
- * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
- *
- * Usage:
- * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
- * 		const ver = encrypt(text, key);
- * 		const ent = decrypt(ver, key);
- * 		console.log("Verschlüsselt: " + ver);
- * 		console.log("Entschlüsselt: " + ent);
- * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
- *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
- **********************************************************************/
-let Modulus = 65536;
-const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
-function nextRandom(X, modulus) {
-    /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
-    /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
-    /* welches unabhängig von gewählten Startwert ist(?).              */
-    const y = (17 * X + 1) % modulus;
-    return y;
-}
-function crypt_HGC(EinText, key, encrypt) {
-    let out = "";
-    let Sign, i, X = 255;
-    Modulus = 65536;
-    if (typeof key === 'string') {
-        for (i = 0; i < key.length; i++)
-            X = (X * key.charCodeAt(i)) % Modulus;
-    }
-    else {
-        key = Number(key);
-        if (isNaN(key))
-            key = 3333;
-        else if (key < 0)
-            key = key * -1;
-    }
-    i = 0;
-    while (i < EinText.length) {
-        X = nextRandom(X, Modulus);
-        Sign = EinText.charCodeAt(i) ^ ((X >> 8) & 255);
-        if (typeof key === 'string') {
-            Sign = Sign ^ key.charCodeAt(i % key.length);
-        }
-        else {
-            Sign = Sign ^ key;
-        }
-        if (encrypt)
-            X = X ^ Sign;
-        else
-            X = X ^ EinText.charCodeAt(i);
-        out = out + String.fromCharCode(Sign);
-        i++;
-    }
-    return out;
-}
-function encrypt(text, key) {
-    key = typeof key === 'undefined' ? salt : key;
-    return encodeURI(crypt_HGC(text, key, true));
-}
-function decrypt(chiffre, key) {
-    key = typeof key === 'undefined' ? salt : key;
-    return crypt_HGC(decodeURI(chiffre), key, false);
-}
-/**********************************************************************
-*
-**********************************************************************/
-function promisifyRequest(request, crypt, key) {
-    let cipher = "";
+function promisifyRequest(request) {
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
-        request.oncomplete = request.onsuccess = () => {
-            const res = request.result;
-            console.log(`DEBUG - promisify (${key}) res: ${JSON.stringify(res).substring(0, 100)}`);
-            if (typeof res != 'undefined' && key == 'activeUser') {
-                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
-                if (crypt === 'encrypt') {
-                    cipher = encrypt(JSON.stringify(res));
-                }
-                else if (crypt === 'decrypt') {
-                    cipher = JSON.stringify(decrypt(res));
-                }
-                console.log(`DEBUG - promisify - key: ${key}`);
-                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
-                resolve(res);
-            }
-        };
+        request.oncomplete = request.onsuccess = () => resolve(request.result);
         // @ts-ignore - file size hacks
         request.onabort = request.onerror = () => reject(request.error);
     });
@@ -99,7 +13,7 @@ function promisifyRequest(request, crypt, key) {
 function createStore(dbName, storeName) {
     const request = indexedDB.open(dbName);
     request.onupgradeneeded = () => request.result.createObjectStore(storeName);
-    const dbp = promisifyRequest(request, "", "");
+    const dbp = promisifyRequest(request);
     return (txMode, callback) => dbp.then((db) => callback(db.transaction(storeName, txMode).objectStore(storeName)));
 }
 let defaultGetStoreFunc;
@@ -116,7 +30,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key)));
 }
 /**
  * Set a value with a key.
@@ -128,7 +42,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction, "encrypt", key);
+        return promisifyRequest(store.transaction);
     });
 }
 /**
@@ -141,7 +55,7 @@ function set(key, value, customStore = defaultGetStore()) {
 function setMany(entries, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         entries.forEach((entry) => store.put(entry[1], entry[0]));
-        return promisifyRequest(store.transaction, "", "");
+        return promisifyRequest(store.transaction);
     });
 }
 /**
@@ -151,7 +65,7 @@ function setMany(entries, customStore = defaultGetStore()) {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function getMany(keys, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => Promise.all(keys.map((key) => promisifyRequest(store.get(key), "", ""))));
+    return customStore('readonly', (store) => Promise.all(keys.map((key) => promisifyRequest(store.get(key)))));
 }
 /**
  * Update a value. This lets you see the old value and update it as an atomic operation.
@@ -169,7 +83,7 @@ function update(key, updater, customStore = defaultGetStore()) {
         store.get(key).onsuccess = function () {
             try {
                 store.put(updater(this.result), key);
-                resolve(promisifyRequest(store.transaction, "", ""));
+                resolve(promisifyRequest(store.transaction));
             }
             catch (err) {
                 reject(err);
@@ -186,7 +100,7 @@ function update(key, updater, customStore = defaultGetStore()) {
 function del(key, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.delete(key);
-        return promisifyRequest(store.transaction, "", "");
+        return promisifyRequest(store.transaction);
     });
 }
 /**
@@ -198,7 +112,7 @@ function del(key, customStore = defaultGetStore()) {
 function delMany(keys, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         keys.forEach((key) => store.delete(key));
-        return promisifyRequest(store.transaction, "", "");
+        return promisifyRequest(store.transaction);
     });
 }
 /**
@@ -209,7 +123,7 @@ function delMany(keys, customStore = defaultGetStore()) {
 function clear(customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.clear();
-        return promisifyRequest(store.transaction, "", "");
+        return promisifyRequest(store.transaction);
     });
 }
 function eachCursor(store, callback) {
@@ -219,7 +133,7 @@ function eachCursor(store, callback) {
         callback(this.result);
         this.result.continue();
     };
-    return promisifyRequest(store.transaction, "", "");
+    return promisifyRequest(store.transaction);
 }
 /**
  * Get all keys in the store.
@@ -230,7 +144,7 @@ function keys(customStore = defaultGetStore()) {
     return customStore('readonly', (store) => {
         // Fast path for modern browsers
         if (store.getAllKeys) {
-            return promisifyRequest(store.getAllKeys(), "", "");
+            return promisifyRequest(store.getAllKeys());
         }
         const items = [];
         return eachCursor(store, (cursor) => items.push(cursor.key)).then(() => items);
@@ -245,7 +159,7 @@ function values(customStore = defaultGetStore()) {
     return customStore('readonly', (store) => {
         // Fast path for modern browsers
         if (store.getAll) {
-            return promisifyRequest(store.getAll(), "", "");
+            return promisifyRequest(store.getAll());
         }
         const items = [];
         return eachCursor(store, (cursor) => items.push(cursor.value)).then(() => items);
@@ -262,8 +176,8 @@ function entries(customStore = defaultGetStore()) {
         // (although, hopefully we'll get a simpler path some day)
         if (store.getAll && store.getAllKeys) {
             return Promise.all([
-                promisifyRequest(store.getAllKeys(), "", ""),
-                promisifyRequest(store.getAll(), "", "")
+                promisifyRequest(store.getAllKeys()),
+                promisifyRequest(store.getAll()),
             ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
         }
         const items = [];
@@ -273,10 +187,8 @@ function entries(customStore = defaultGetStore()) {
 
 exports.clear = clear;
 exports.createStore = createStore;
-exports.decrypt = decrypt;
 exports.del = del;
 exports.delMany = delMany;
-exports.encrypt = encrypt;
 exports.entries = entries;
 exports.get = get;
 exports.getMany = getMany;
