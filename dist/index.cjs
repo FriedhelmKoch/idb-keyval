@@ -10,7 +10,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
  *
  * Usage:
  * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
+ * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
  * 		const ver = encrypt(text, key);
  * 		const ent = decrypt(ver, key);
  * 		console.log("Verschlüsselt: " + ver);
@@ -19,7 +19,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
  *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
  **********************************************************************/
 let Modulus = 65536;
-const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
+const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 function nextRandom(X, modulus) {
     /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
     /* Mit den gewählten Parametern ergibt sich eine maximale Periode, */
@@ -78,7 +78,7 @@ function promisifyRequest(request, crypt, key) {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
             const res = request.result;
-            if (typeof res != 'undefined' && key === 'activeUser') {
+            if (typeof res != 'undefined' && key == 'activeUser') {
                 console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
                 if (crypt === 'encrypt') {
                     cipher = encrypt(JSON.stringify(res));
@@ -86,6 +86,7 @@ function promisifyRequest(request, crypt, key) {
                 else if (crypt === 'decrypt') {
                     cipher = JSON.stringify(decrypt(res));
                 }
+                console.log(`DEBUG - promisify - key: ${key}`);
                 console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
                 resolve(res);
             }
@@ -114,7 +115,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", "activeUser"));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
 }
 /**
  * Set a value with a key.
@@ -126,7 +127,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction, "encrypt", "activeUser");
+        return promisifyRequest(store.transaction, "encrypt", key);
     });
 }
 /**

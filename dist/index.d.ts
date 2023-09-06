@@ -3,7 +3,7 @@ export declare function decrypt(chiffre: string, key?: string | number): string;
 /**********************************************************************
 *
 **********************************************************************/
-export declare function promisifyRequest<T = undefined>(request: IDBRequest<T> | IDBTransaction, crypt: string, key: string): Promise<T>;
+export declare function promisifyRequest<T = undefined>(request: IDBRequest<T> | IDBTransaction, crypt: string, key: any): Promise<T>;
 export declare function createStore(dbName: string, storeName: string): UseStore;
 export declare type UseStore = <T>(txMode: IDBTransactionMode, callback: (store: IDBObjectStore) => T | PromiseLike<T>) => Promise<T>;
 /**

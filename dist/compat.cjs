@@ -23,7 +23,7 @@ Object.defineProperty(exports, '__esModule', {
  *
  * Usage:
  * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
+ * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
  * 		const ver = encrypt(text, key);
  * 		const ent = decrypt(ver, key);
  * 		console.log("Verschlüsselt: " + ver);
@@ -33,7 +33,7 @@ Object.defineProperty(exports, '__esModule', {
  **********************************************************************/
 
 var Modulus = 65536;
-var salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSalt,EvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
+var salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 
 function nextRandom(X, modulus) {
   /* Methode: Lineare Kongruenz =>  X[i] = (a * X[i-1] + b) mod m    */
@@ -102,7 +102,7 @@ function promisifyRequest(request, crypt, key) {
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
 
-      if (typeof res != 'undefined' && key === 'activeUser') {
+      if (typeof res != 'undefined' && key == 'activeUser') {
         console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
 
         if (crypt === 'encrypt') {
@@ -111,6 +111,7 @@ function promisifyRequest(request, crypt, key) {
           cipher = JSON.stringify(decrypt(res));
         }
 
+        console.log("DEBUG - promisify - key: ".concat(key));
         console.log("DEBUG - promisify - cipher: ".concat(JSON.stringify(cipher).substring(0, 100), ", klartext: ").concat(JSON.stringify(decrypt(cipher).substring(0, 100))));
         resolve(res);
       }
@@ -158,7 +159,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key), "decrypt", "activeUser");
+    return promisifyRequest(store.get(key), "decrypt", key);
   });
 }
 /**
@@ -174,7 +175,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "encrypt", "activeUser");
+    return promisifyRequest(store.transaction, "encrypt", key);
   });
 }
 /**

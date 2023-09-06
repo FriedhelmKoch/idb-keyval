@@ -72,7 +72,7 @@ export function decrypt(chiffre: string, key?: string | number): string {
 * 
 **********************************************************************/
 export function promisifyRequest<T = undefined>(
-  request: IDBRequest<T> | IDBTransaction, crypt: string, key: string
+  request: IDBRequest<T> | IDBTransaction, crypt: string, key: any
 ): Promise<T> {
   let cipher: string = "";
   return new Promise<T>((resolve, reject) => {
@@ -130,7 +130,7 @@ export function get<T = any>(
   key: IDBValidKey,
   customStore = defaultGetStore(),
 ): Promise<T | undefined> {
-  return customStore('readonly', (store) => promisifyRequest(store.get(key),  "decrypt", "activeUser"));
+  return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
 }
 
 /**
@@ -147,7 +147,7 @@ export function set(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.put(value, key);
-    return promisifyRequest(store.transaction,  "encrypt", "activeUser");
+    return promisifyRequest(store.transaction,  "encrypt", key);
   });
 }
 

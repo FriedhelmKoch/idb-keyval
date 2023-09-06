@@ -6,7 +6,7 @@
  *
  * Usage:
  * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";		// wenn key nicht definiert, dann wird default key genutzt
+ * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
  * 		const ver = encrypt(text, key);
  * 		const ent = decrypt(ver, key);
  * 		console.log("Verschlüsselt: " + ver);
@@ -22,30 +22,6 @@ function nextRandom(X, modulus) {
     /* welches unabhängig von gewählten Startwert ist(?).              */
     const y = (17 * X + 1) % modulus;
     return y;
-}
-function getBlockLength(m) {
-	let i = 0;
-	while(m > 0) {
-		i++;
-		m = m>>8;
-	}
-	return i-1;
-}
-function getKey(key) {
-	if (isNaN(key)) {
-		key = key + key;
-		key = (key.charCodeAt(0)<<8) + key.charCodeAt(1);
-	} else {
-		key = parseInt(key);
-		if (isNaN(key))
-			key = 3333;
-		else if (key < 0)
-			key = key * -1;
-	}
-	key = key + 1;
-	while (key < Math.floor(Modulus/3))
-		key = key * 3;
-	return (key%Modulus);
 }
 function crypt_HGC(EinText, key, encrypt) {
     let out = "";
@@ -93,22 +69,23 @@ function decrypt(chiffre, key) {
 *
 **********************************************************************/
 function promisifyRequest(request, crypt, key) {
-    console.log(`DEBUG - promisify - crypt: ${crypt}, key: ${key}`);
     let cipher = "";
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
-            if (typeof request.result != 'undefined' && key == 'activeUser') {
-                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(request.result).substring(0, 150)}`);
+            const res = request.result;
+            if (typeof res != 'undefined' && key == 'activeUser') {
+                console.log(`DEBUG - promisify - klartext: ${JSON.stringify(res)}`);
                 if (crypt === 'encrypt') {
-                    cipher = encrypt(JSON.stringify(request.result));
+                    cipher = encrypt(JSON.stringify(res));
                 }
                 else if (crypt === 'decrypt') {
-                    cipher = JSON.stringify(decrypt(request.result));
+                    cipher = JSON.stringify(decrypt(res));
                 }
-                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 150)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 150))}`);
+                console.log(`DEBUG - promisify - key: ${key}`);
+                console.log(`DEBUG - promisify - cipher: ${JSON.stringify(cipher).substring(0, 100)}, klartext: ${JSON.stringify(decrypt(cipher).substring(0, 100))}`);
+                resolve(res);
             }
-            resolve(request.result);
         };
         // @ts-ignore - file size hacks
         request.onabort = request.onerror = () => reject(request.error);
@@ -134,7 +111,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", "activeUser"));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
 }
 /**
  * Set a value with a key.
@@ -146,7 +123,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction, "encrypt", "activeUser");
+        return promisifyRequest(store.transaction, "encrypt", key);
     });
 }
 /**
