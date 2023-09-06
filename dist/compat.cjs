@@ -84,10 +84,10 @@ function promisifyRequest(request, crypt, key) {
       if (typeof res != 'undefined' && key === 'activeUser') {
         console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
 
-        if (crypt === 'encrypt') {
+        if (crypt === 'en') {
           cipher = encrypt(JSON.stringify(res));
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
-        } else if (crypt === 'decrypt') {
+        } else if (crypt === 'de') {
           var str = decrypt(res).replaceAll("\\", "");
           console.log("DEBUG - promisify (".concat(crypt, ") cipher-string: ").concat(JSON.stringify(str).substring(0, 100)));
           cipher = JSON.parse(str);
@@ -144,7 +144,7 @@ function defaultGetStore() {
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
   return customStore('readonly', function (store) {
-    return promisifyRequest(store.get(key), "decrypt", key);
+    return promisifyRequest(store.get(key), "de", key);
   });
 }
 /**
@@ -160,7 +160,7 @@ function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
     store.put(value, key);
-    return promisifyRequest(store.transaction, "encrypt", key);
+    return promisifyRequest(store.transaction, "en", key);
   });
 }
 /**

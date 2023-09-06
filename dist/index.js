@@ -57,11 +57,11 @@ function promisifyRequest(request, crypt, key) {
             const res = request.result;
             if (typeof res != 'undefined' && key === 'activeUser') {
                 console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
-                if (crypt === 'encrypt') {
+                if (crypt === 'en') {
                     cipher = encrypt(JSON.stringify(res));
                     console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
                 }
-                else if (crypt === 'decrypt') {
+                else if (crypt === 'de') {
                     const str = decrypt(res).replaceAll("\\", "");
                     console.log(`DEBUG - promisify (${crypt}) cipher-string: ${JSON.stringify(str).substring(0, 100)}`);
                     cipher = JSON.parse(str);
@@ -99,7 +99,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    return customStore('readonly', (store) => promisifyRequest(store.get(key), "decrypt", key));
+    return customStore('readonly', (store) => promisifyRequest(store.get(key), "de", key));
 }
 /**
  * Set a value with a key.
@@ -111,7 +111,7 @@ function get(key, customStore = defaultGetStore()) {
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
         store.put(value, key);
-        return promisifyRequest(store.transaction, "encrypt", key);
+        return promisifyRequest(store.transaction, "en", key);
     });
 }
 /**
