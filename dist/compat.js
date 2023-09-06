@@ -10,22 +10,6 @@ function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Sy
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-/**********************************************************************
- * Crypt
- *
- * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
- * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
- *
- * Usage:
- * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
- * 		const ver = encrypt(text, key);
- * 		const ent = decrypt(ver, key);
- * 		console.log("Verschlüsselt: " + ver);
- * 		console.log("Entschlüsselt: " + ent);
- * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
- *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
- **********************************************************************/
 var Modulus = 65536;
 var salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 
@@ -84,10 +68,6 @@ function decrypt(chiffre, key) {
   key = typeof key === 'undefined' ? salt : key;
   return crypt_HGC(decodeURI(chiffre), key, false);
 }
-/**********************************************************************
-*
-**********************************************************************/
-
 
 function promisifyRequest(request, crypt, key) {
   var cipher = "";
@@ -108,7 +88,11 @@ function promisifyRequest(request, crypt, key) {
         }
       }
 
-      resolve(res);
+      if (cipher != "") {
+        resolve(cipher);
+      } else {
+        resolve(res);
+      }
     }; // @ts-ignore - file size hacks
 
 
@@ -361,12 +345,10 @@ function entries() {
     }
 
     var items = [];
-    return customStore('readonly', function (store) {
-      return eachCursor(store, function (cursor) {
-        return items.push([cursor.key, cursor.value]);
-      }).then(function () {
-        return items;
-      });
+    return eachCursor(store, function (cursor) {
+      return items.push([cursor.key, cursor.value]);
+    }).then(function () {
+      return items;
     });
   });
 }

@@ -1,19 +1,3 @@
-/**********************************************************************
- * Crypt
- *
- * Funktionen für die selbsterstellten Algorithmen nach Cipher-Feedback-Modus (CFB) - Blockchiffre
- * http://www.nord-com.net/h-g.mekelburg/krypto/glossar.htm#modus
- *
- * Usage:
- * 		const text = "Das ist ein zu verschlüsselnder Text";
- * 		const key = "salt";  // wenn key nicht definiert, dann wird default key genutzt
- * 		const ver = encrypt(text, key);
- * 		const ent = decrypt(ver, key);
- * 		console.log("Verschlüsselt: " + ver);
- * 		console.log("Entschlüsselt: " + ent);
- * 		console.log("Ver-/Entschlüsselt: " + encrypt(text) + ', ' + decrypt(encrypt(text)));
- *      console.log(`Text: ${text}, Verschlüsselt: ${encrypt(text, key)}, Entschlüsselt: ${decrypt(encrypt(text,key), key)}`);
- **********************************************************************/
 let Modulus = 65536;
 const salt = '${ThatIsTheSaltInTheSoupAndItJustTastesWayTooMuchLikeSaltEvenThoughSaltIsImportantAndIsAlsoNeededByTheHumanBody}';
 function nextRandom(X, modulus) {
@@ -65,9 +49,6 @@ function decrypt(chiffre, key) {
     key = typeof key === 'undefined' ? salt : key;
     return crypt_HGC(decodeURI(chiffre), key, false);
 }
-/**********************************************************************
-*
-**********************************************************************/
 function promisifyRequest(request, crypt, key) {
     let cipher = "";
     return new Promise((resolve, reject) => {
@@ -85,7 +66,12 @@ function promisifyRequest(request, crypt, key) {
                     console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
                 }
             }
-            resolve(res);
+            if (cipher != "") {
+                resolve(cipher);
+            }
+            else {
+                resolve(res);
+            }
         };
         // @ts-ignore - file size hacks
         request.onabort = request.onerror = () => reject(request.error);
@@ -262,7 +248,7 @@ function entries(customStore = defaultGetStore()) {
             ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
         }
         const items = [];
-        return customStore('readonly', (store) => eachCursor(store, (cursor) => items.push([cursor.key, cursor.value])).then(() => items));
+        return eachCursor(store, (cursor) => items.push([cursor.key, cursor.value])).then(() => items);
     });
 }
 
