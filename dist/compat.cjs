@@ -88,7 +88,7 @@ function promisifyRequest(request, crypt, key) {
           cipher = encrypt(JSON.stringify(res));
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
         } else if (crypt === 'decrypt') {
-          cipher = JSON.stringify(decrypt(res));
+          cipher = JSON.parse(decrypt(res).replaceAll("\\", ""));
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
         }
       }
