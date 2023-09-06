@@ -3,7 +3,13 @@ export function promisifyRequest<T = undefined>(
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
-    request.oncomplete = request.onsuccess = () => resolve(request.result);
+    request.oncomplete = request.onsuccess = () => { const res = request.result;
+
+      console.log(`DEBUG - promisify (${key}) res: ${JSON.stringify(res).substring(0, 100)}`);
+
+      resolve(res);
+    }
+    
     // @ts-ignore - file size hacks
     request.onabort = request.onerror = () => reject(request.error);
   });
