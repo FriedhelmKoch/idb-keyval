@@ -1,5 +1,5 @@
 export function promisifyRequest<T = undefined>(
-  request: IDBRequest<T> | IDBTransaction,
+  request: IDBRequest<T> | IDBTransaction, crypt: string, key: IDBValidKey
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     // @ts-ignore - file size hacks
@@ -12,7 +12,7 @@ export function promisifyRequest<T = undefined>(
 export function createStore(dbName: string, storeName: string): UseStore {
   const request = indexedDB.open(dbName);
   request.onupgradeneeded = () => request.result.createObjectStore(storeName);
-  const dbp = promisifyRequest(request);
+  const dbp = promisifyRequest(request, "", "");
 
   return (txMode, callback) =>
     dbp.then((db) =>
@@ -44,7 +44,7 @@ export function get<T = any>(
   key: IDBValidKey,
   customStore = defaultGetStore(),
 ): Promise<T | undefined> {
-  return customStore('readonly', (store) => promisifyRequest(store.get(key)));
+  return customStore('readonly', (store) => promisifyRequest(store.get(key), "", ""));
 }
 
 /**
@@ -61,7 +61,7 @@ export function set(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.put(value, key);
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -78,7 +78,7 @@ export function setMany(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     entries.forEach((entry) => store.put(entry[1], entry[0]));
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -93,7 +93,7 @@ export function getMany<T = any>(
   customStore = defaultGetStore(),
 ): Promise<T[]> {
   return customStore('readonly', (store) =>
-    Promise.all(keys.map((key) => promisifyRequest(store.get(key)))),
+    Promise.all(keys.map((key) => promisifyRequest(store.get(key), "", ""))),
   );
 }
 
@@ -119,7 +119,7 @@ export function update<T = any>(
         store.get(key).onsuccess = function () {
           try {
             store.put(updater(this.result), key);
-            resolve(promisifyRequest(store.transaction));
+            resolve(promisifyRequest(store.transaction, "", ""));
           } catch (err) {
             reject(err);
           }
@@ -140,7 +140,7 @@ export function del(
 ): Promise<void> {
   return customStore('readwrite', (store) => {
     store.delete(key);
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -156,7 +156,7 @@ export function delMany(
 ): Promise<void> {
   return customStore('readwrite', (store: IDBObjectStore) => {
     keys.forEach((key: IDBValidKey) => store.delete(key));
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -168,7 +168,7 @@ export function delMany(
 export function clear(customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
     store.clear();
-    return promisifyRequest(store.transaction);
+    return promisifyRequest(store.transaction, "", "");
   });
 }
 
@@ -181,7 +181,7 @@ function eachCursor(
     callback(this.result);
     this.result.continue();
   };
-  return promisifyRequest(store.transaction);
+  return promisifyRequest(store.transaction, "", "");
 }
 
 /**
@@ -196,7 +196,7 @@ export function keys<KeyType extends IDBValidKey>(
     // Fast path for modern browsers
     if (store.getAllKeys) {
       return promisifyRequest(
-        store.getAllKeys() as unknown as IDBRequest<KeyType[]>,
+        store.getAllKeys() as unknown as IDBRequest<KeyType[]>, "", ""
       );
     }
 
@@ -217,7 +217,7 @@ export function values<T = any>(customStore = defaultGetStore()): Promise<T[]> {
   return customStore('readonly', (store) => {
     // Fast path for modern browsers
     if (store.getAll) {
-      return promisifyRequest(store.getAll() as IDBRequest<T[]>);
+      return promisifyRequest(store.getAll() as IDBRequest<T[]>, "", "");
     }
 
     const items: T[] = [];
@@ -242,9 +242,9 @@ export function entries<KeyType extends IDBValidKey, ValueType = any>(
     if (store.getAll && store.getAllKeys) {
       return Promise.all([
         promisifyRequest(
-          store.getAllKeys() as unknown as IDBRequest<KeyType[]>,
+          store.getAllKeys() as unknown as IDBRequest<KeyType[]>, "", "",
         ),
-        promisifyRequest(store.getAll() as IDBRequest<ValueType[]>),
+        promisifyRequest(store.getAll() as IDBRequest<ValueType[]>, "", ""),
       ]).then(([keys, values]) => keys.map((key, i) => [key, values[i]]));
     }
 

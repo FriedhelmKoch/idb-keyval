@@ -2,7 +2,7 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-function promisifyRequest(request) {
+function promisifyRequest(request, crypt, key) {
     return new Promise((resolve, reject) => {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => resolve(request.result);
@@ -83,7 +83,7 @@ function update(key, updater, customStore = defaultGetStore()) {
         store.get(key).onsuccess = function () {
             try {
                 store.put(updater(this.result), key);
-                resolve(promisifyRequest(store.transaction));
+                resolve(promisifyRequest(store.transaction, "", ""));
             }
             catch (err) {
                 reject(err);

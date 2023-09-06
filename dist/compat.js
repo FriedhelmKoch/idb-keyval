@@ -10,7 +10,7 @@ function _iterableToArrayLimit(arr, i) { var _i = arr == null ? null : typeof Sy
 
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 
-function promisifyRequest(request) {
+function promisifyRequest(request, crypt, key) {
   return new Promise(function (resolve, reject) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
@@ -131,7 +131,7 @@ function update(key, updater) {
         store.get(key).onsuccess = function () {
           try {
             store.put(updater(this.result), key);
-            resolve(promisifyRequest(store.transaction));
+            resolve(promisifyRequest(store.transaction, "", ""));
           } catch (err) {
             reject(err);
           }
