@@ -89,7 +89,7 @@ function promisifyRequest(request, crypt, key) {
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
         } else if (crypt === 'de') {
           var str = decrypt(res).replaceAll("\\", "");
-          console.log("DEBUG - promisify (".concat(crypt, ") cipher-string: ").concat(JSON.stringify(str).substring(0, 100)));
+          console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(str).substring(0, 100)));
           cipher = JSON.parse(str);
           console.log("DEBUG - promisify (".concat(crypt, ") cipher: ").concat(JSON.stringify(cipher).substring(0, 100)));
         }
@@ -143,6 +143,7 @@ function defaultGetStore() {
 
 function get(key) {
   var customStore = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : defaultGetStore();
+  console.log("DEBUG - GET: ".concat(JSON.stringify(key)));
   return customStore('readonly', function (store) {
     return promisifyRequest(store.get(key), "de", key);
   });
@@ -159,6 +160,7 @@ function get(key) {
 function set(key, value) {
   var customStore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : defaultGetStore();
   return customStore('readwrite', function (store) {
+    console.log("DEBUG - SET: ".concat(JSON.stringify(key), " ==> ").concat(JSON.stringify(value).substring(0, 100)));
     store.put(value, key);
     return promisifyRequest(store.transaction, "en", key);
   });

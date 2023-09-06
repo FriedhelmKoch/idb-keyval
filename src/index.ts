@@ -73,7 +73,7 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
           console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
         } else if (crypt === 'de') {
           const str: string = decrypt(res).replaceAll("\\", "");
-          console.log(`DEBUG - promisify (${crypt}) cipher-string: ${JSON.stringify(str).substring(0, 100)}`);
+          console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(str).substring(0, 100)}`);
 
           cipher = JSON.parse(str);
           console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
@@ -118,6 +118,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key: IDBValidKey, customStore = defaultGetStore()): Promise<any> {
+  console.log(`DEBUG - GET: ${JSON.stringify(key)}`);
   return customStore('readonly', (store) => promisifyRequest(store.get(key), "de", key));
 }
 
@@ -130,6 +131,7 @@ function get(key: IDBValidKey, customStore = defaultGetStore()): Promise<any> {
  */
 function set(key: IDBValidKey, value: any, customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
+    console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
     store.put(value, key);
     return promisifyRequest(store.transaction, "en", key);
   });
