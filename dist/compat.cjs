@@ -81,7 +81,7 @@ function promisifyRequest(request, crypt, key) {
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
 
-      if (typeof res != 'undefined' && key == 'activeUser') {
+      if (typeof res != 'undefined' && key === 'activeUser') {
         console.log("DEBUG - promisify (".concat(key, " | ").concat(crypt, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
 
         if (crypt === 'encrypt') {
@@ -93,7 +93,7 @@ function promisifyRequest(request, crypt, key) {
         }
       }
 
-      if (cipher != "") {
+      if (cipher != "" && key === 'activeUser') {
         resolve(cipher);
       } else {
         resolve(res);

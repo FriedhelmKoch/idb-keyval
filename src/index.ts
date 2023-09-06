@@ -65,7 +65,7 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
 
-      if (typeof res != 'undefined' && key == 'activeUser') {
+      if (typeof res != 'undefined' && key === 'activeUser') {
         console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
 
         if (crypt === 'encrypt') {
@@ -77,7 +77,7 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
         }
       }
 
-      if (cipher != "") {
+      if (cipher != "" && key === 'activeUser') {
         resolve(cipher);
       } else {
         resolve(res);
