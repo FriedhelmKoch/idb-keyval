@@ -65,7 +65,7 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = () => { const res = request.result;
 
-      if (typeof res != 'undefined' && key === 'activeUser') {
+      if (typeof res != 'undefined' && (key === 'activeUser' || key === 'activityOwners')) {
         //console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
 
         if (crypt === 'de') {
@@ -130,7 +130,7 @@ function get(key: IDBValidKey, customStore = defaultGetStore()): Promise<any> {
 function set(key: IDBValidKey, value: any, customStore = defaultGetStore()): Promise<void> {
   return customStore('readwrite', (store) => {
     //console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-    if (key === 'activeUser') {
+    if (key === 'activeUser' || key === 'activityOwners') {
       //console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
       store.put(encrypt(JSON.stringify(value)), key);
     } else {
