@@ -62,7 +62,8 @@ function promisifyRequest(request, crypt, key) {
                     console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
                 }
                 else if (crypt === 'decrypt') {
-                    cipher = JSON.parse(decrypt(res).replaceAll("\\", ""));
+                    const str = decrypt(res).replaceAll("\\", "");
+                    cipher = JSON.parse(str);
                     console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
                 }
             }

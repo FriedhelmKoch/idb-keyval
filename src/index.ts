@@ -72,7 +72,8 @@ function promisifyRequest<T = string>(request: IDBRequest<T> | IDBTransaction, c
           cipher = encrypt(JSON.stringify(res));
           console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
         } else if (crypt === 'decrypt') {
-          cipher = JSON.parse(decrypt(res).replaceAll("\\", ""));
+          const str: string = decrypt(res).replaceAll("\\", "");
+          cipher = JSON.parse(str);
           console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
         }
       }
