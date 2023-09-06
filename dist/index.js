@@ -55,13 +55,13 @@ function promisifyRequest(request, crypt, key) {
         // @ts-ignore - file size hacks
         request.oncomplete = request.onsuccess = () => {
             const res = request.result;
-            if (typeof res != 'undefined' && key === 'activeUser') {
-                console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
+            if (typeof res != 'undefined' && (key === 'activeUser' || key === 'settings')) {
+                //console.log(`DEBUG - promisify (${key} | ${crypt}) res: ${JSON.stringify(res).substring(0, 100)}`);
                 if (crypt === 'de') {
                     const str = decrypt(res).replaceAll("\\", "");
-                    console.log(`DEBUG - promisify (${crypt}) cipher-str: ${JSON.stringify(str).substring(0, 100)}`);
+                    //console.log(`DEBUG - promisify (${crypt}) cipher-str: ${JSON.stringify(str).substring(0, 100)}`);
                     cipher = JSON.parse(str);
-                    console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
+                    //console.log(`DEBUG - promisify (${crypt}) cipher: ${JSON.stringify(cipher).substring(0, 100)}`);
                 }
             }
             if (cipher != "" && key === 'activeUser') {
@@ -95,7 +95,7 @@ function defaultGetStore() {
  * @param customStore Method to get a custom store. Use with caution (see the docs).
  */
 function get(key, customStore = defaultGetStore()) {
-    console.log(`DEBUG - GET: ${JSON.stringify(key)}`);
+    //console.log(`DEBUG - GET: ${JSON.stringify(key)}`);
     return customStore('readonly', (store) => promisifyRequest(store.get(key), "de", key));
 }
 /**
@@ -107,9 +107,9 @@ function get(key, customStore = defaultGetStore()) {
  */
 function set(key, value, customStore = defaultGetStore()) {
     return customStore('readwrite', (store) => {
-        console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
-        if (key == 'activeUser') {
-            console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
+        //console.log(`DEBUG - SET: ${JSON.stringify(key)} ==> ${JSON.stringify(value).substring(0, 100)}`);
+        if (key === 'activeUser' || key === 'settings') {
+            //console.log(`DEBUG - stored ${JSON.stringify(key)} encrypted...`);
             store.put(encrypt(JSON.stringify(value)), key);
         }
         else {
