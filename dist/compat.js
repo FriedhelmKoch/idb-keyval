@@ -95,6 +95,7 @@ function promisifyRequest(request, crypt, key) {
     // @ts-ignore - file size hacks
     request.oncomplete = request.onsuccess = function () {
       var res = request.result;
+      console.log("DEBUG - promisify (".concat(key, ") res: ").concat(JSON.stringify(res).substring(0, 100)));
 
       if (typeof res != 'undefined' && key == 'activeUser') {
         console.log("DEBUG - promisify - klartext: ".concat(JSON.stringify(res)));
